@@ -1,0 +1,148 @@
+import SC2IncomeCalculator as sic
+from abc import ABC, abstractmethod
+import SC2Constants as sc
+from dataclasses import dataclass
+
+
+@dataclass(frozen=True)
+class CurrentIncome:
+    time: int
+    minerals: float
+    vespene: float
+
+
+@dataclass
+class Bank:
+    minerals: float
+    vespene: float
+    free_supply: int
+
+
+class Player(ABC):
+    def __init__(self):
+        self.time = 0
+        self.supply_capacitor_count = 0
+        # list of CurrentIncome. resources becomes (time - self.income[-1]["time"]) * self.income[-1]["resource"]
+        self.income = []
+        self.bank_statement = []
+        self.units = dict()
+        self.structures = dict()
+        # self.events[time] ->
+        self.events = dict()
+
+    # TODO
+    def update_bank(self, time):
+        ...
+
+    def buy(self, time, mineral_cost, vespene_cost, supply_cost) -> bool:
+        if not self.bank_statement[time]:
+            self.update_bank(time)
+        if self.bank_statement[time].minerals < mineral_cost:
+            return False
+        if self.bank_statement[time].vespene < vespene_cost:
+            return False
+        if self.bank_statement[time].free_supply < supply_cost:
+            return False
+        self.bank_statement[time].minerals -= mineral_cost
+        self.bank_statement[time].vespene -= vespene_cost
+        self.bank_statement[time].supply -= supply_cost
+        return True
+
+    # DP opportunity
+    def total_minerals(self, time):
+        minerals = 50
+        income_iterator = iter(self.income)
+        current_income = income_iterator.__next__()
+        while (future_income := income_iterator.__next__()).time < time:
+            minerals += current_income.minerals * (future_income.time - current_income.time)
+            current_income = future_income
+        return minerals + (current_income.minerals * (time - current_income.time))
+
+    def total_vespene(self, time, incomes_processed=1):
+        if time == 0:
+            return 0
+        income = self.income[-incomes_processed]
+        if income.time > time:
+            return self.total_vespene(time, incomes_processed + 1)
+        return (income.vespene * (time - income.time)) + self.total_vespene(income.time, incomes_processed + 1)
+
+    def free_supply(self, time) -> int: return self.max_supply(time) - self.used_supply(time)
+    @abstractmethod
+    def max_supply(self, time) -> int: ...
+
+    @abstractmethod
+    def used_supply(self, time) -> int: ...
+
+    @abstractmethod
+    def make_base(self): ...
+
+    @abstractmethod
+    def make_supply_capacitor(self): ...
+
+    @abstractmethod
+    def make_worker(self): ...
+
+    @abstractmethod
+    def make_structure(self, structure_name): ...
+
+    @abstractmethod
+    def make_unit(self): ...
+
+
+HATCH_SUPPLY = 6
+OVERLORD_SUPPLY = 8
+
+
+class ZergPlayer(Player):
+    def __init__(self):
+        super().__init__()
+
+    def larvae_count(self, time):
+        if time == 0:
+            return 3
+
+    @property
+    def max_supply(self) -> int:
+        return (self.base_count * 6) + (self.supply_capacitor_count * 8)
+
+    @property
+    def current_supply(self) -> int:
+        pass
+
+    def make_base(self):
+        pass
+
+    def make_supply_capacitor(self):
+        pass
+
+    def make_worker(self):
+        pass
+
+    def make_structure(self, time, structure_name):
+        structure_info = sc.ZERG_STRUCTURES[structure_name]
+        if self.buy(structure_info["Minerals"], structure_info["Vespene"], 0):
+            ...
+
+    def make_unit(self):
+        pass
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
