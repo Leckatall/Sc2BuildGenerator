@@ -19,11 +19,7 @@ class Expense:
     supply: int
 
 
-@dataclass
-class Bank:
-    minerals: float
-    vespene: float
-    free_supply: int
+
 
 @dataclass
 class GameState:
@@ -121,8 +117,7 @@ class Player(ABC):
         return (income.vespene * (time - income.time)) + self.total_vespene(income.time, incomes_processed + 1)
 
     def move_worker(self, time, to_vespene: bool = True):
-        self.income_generator.mineral_workers -= 1
-        self.income_generator.vespene_workers += 1
+        self.income_generator.move_workers(1, to_vespene)
 
 
 
