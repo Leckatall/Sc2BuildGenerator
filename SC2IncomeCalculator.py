@@ -30,7 +30,7 @@ class Bank:
         return Bank(self.minerals + other.minerals, self.vespene + other.vespene)
 
 
-@dataclass
+@dataclass(frozen=True)
 class IncomeArguments:
     time: int  # Time these arguments were put in place
 
@@ -85,7 +85,7 @@ class IncomeManager:
         self.income_args_list.append(replace(previous_args, time=time, **kwargs))
         self.income_args_list.sort(key=lambda x: x.time)
 
-    def change_args_at_time(self, time, **kwargs):
+    def change_args_at_time(self, time, **kwargs) -> bool:
         """
         :param time:
         :type time: int
@@ -97,9 +97,11 @@ class IncomeManager:
 
         for key in kwargs.keys():
             kwargs[key] += previous_args.__dict__[key]
-
+            if kwargs[key] < 0:
+                return False
         self.income_args_list.append(replace(previous_args, time=time, **kwargs))
         self.income_args_list.sort(key=lambda x: x.time)
+        return True
 
     def get_total_mined(self, time: int) -> Bank:
         if time == 0:
@@ -144,30 +146,22 @@ class IncomeManager:
                               vespene_workers=0)
         return current_args.vespene_workers
 
-    # TODO
-    def workers_to_vespene(self, time: int, count: int):
+    def workers_to_vespene(self, time: int, count: int) -> int:
         """
         :return: the amount of workers that were moved
         :rtype: int
         """
-        current_args = self.get_args_for_time(time)
-        new_args = replace(current_args,
-                           time=time,
-                           mineral_workers=current_args.mineral_workers - count,
-                           vespene_workers=current_args.vespene_workers + count)
-        if new_args.mineral_workers < 0:
-            new_args.vespene_workers += new_args.mineral_workers
-            new_args.mineral_workers = 0
-        if new_args.vespene_workers < 0:
-            new_args.mineral_workers += new_args.vespene_workers
-            new_args.vespene_workers = 0
+        for i in range(count, 0, -count//abs(count)):
+            if self.change_args_at_time(time,
+                                        mineral_workers=-i,
+                                        vespene_workers=i):
+                return i
+        return 0
 
     def add_vespene_geyser(self, time: int) -> bool:
         current_args = self.get_args_for_time(time)
         if current_args.base_count * 2 > current_args.vespene_geyser_count:
-            self.set_args_at_time(replace(current_args,
-                                          time=time,
-                                          vespene_geyser_count=current_args.vespene_geyser_count + 1))
+            self.change_args_at_time(time, vespene_geyser_count=1)
             return True
         return False
 
@@ -175,6 +169,9 @@ class IncomeManager:
     def kill_worker(self, time) -> bool:
         # Mainly for Zerg structures
         # return: A worker has been killed
-        current_args = self.get_args_for_time(time)
-        if current_args.mineral_workers > 0:
-            self.set_args_at_time(time, mineral_workers=current_args.mineral_workers - 1)
+        return self.change_args_at_time(time, mineral_workers=-1)
+
+
+
+
+
