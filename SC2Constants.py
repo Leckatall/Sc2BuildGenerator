@@ -11,24 +11,24 @@ class Expense:
 
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {
-    'Baneling Nest': Expense(100, 50, 0, 43),
-    'CreepTumor': Expense(0, 0, 0, 11),
-    'Evolution Chamber': Expense(75, 0, 0, 25),
-    'Extractor': Expense(25, 0, 0, 21),
-    'GreaterSpire': Expense(100, 150, 0, 71),
-    'Hatchery': Expense(300, 0, 0, 71),
-    'Hive': Expense(200, 150, 0, 71),
-    'HydraliskDen': Expense(100, 100, 0, 29),
-    'InfestationPit': Expense(100, 100, 0, 36),
-    'Lair': Expense(150, 100, 0, 57),
-    'LurkerDen': Expense(100, 150, 0, 57),
-    'NydusNetwork': Expense(150, 150, 0, 36),
-    'RoachWarren': Expense(150, 0, 0, 39),
-    'SpawningPool': Expense(200, 0, 0, 46),
-    'SpineCrawler': Expense(100, 0, 0, 36),
-    'Spire': Expense(200, 200, 0, 71),
-    'SporeCrawler': Expense(75, 0, 0, 21),
-    'UltraliskCavern': Expense(150, 200, 0, 46)
+    "Baneling Nest": Expense(100, 50, 0, 43),
+    "CreepTumor": Expense(0, 0, 0, 11),
+    "Evolution Chamber": Expense(75, 0, 0, 25),
+    "Extractor": Expense(25, 0, 0, 21),
+    "GreaterSpire": Expense(100, 150, 0, 71),
+    "Hatchery": Expense(300, 0, -6, 71),
+    "Hive": Expense(200, 150, 0, 71),
+    "HydraliskDen": Expense(100, 100, 0, 29),
+    "InfestationPit": Expense(100, 100, 0, 36),
+    "Lair": Expense(150, 100, 0, 57),
+    "LurkerDen": Expense(100, 150, 0, 57),
+    "NydusNetwork": Expense(150, 150, 0, 36),
+    "RoachWarren": Expense(150, 0, 0, 39),
+    "SpawningPool": Expense(200, 0, 0, 46),
+    "SpineCrawler": Expense(100, 0, 0, 36),
+    "Spire": Expense(200, 200, 0, 71),
+    "SporeCrawler": Expense(75, 0, 0, 21),
+    "UltraliskCavern": Expense(150, 200, 0, 46)
 }
 
 ZERG_UNITS = {
