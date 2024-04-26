@@ -1,5 +1,5 @@
 
-GATHER_RATES = {
+GATHER_RATES_PER_MIN = {
     "mineralsOptimal": 58,
     "mineralsSuboptimal": 27,
     "goldMineralsOptimal": 83,
@@ -9,6 +9,8 @@ GATHER_RATES = {
     "richVespeneOptimal": 122,
     "richVespeneSuboptimal": 80
 }
+
+GATHER_RATES = {key: GATHER_RATES_PER_MIN[key]/60 for key in GATHER_RATES_PER_MIN.keys()}
 
 STARTING_VALUES = {
     "base_count": 1,
@@ -31,7 +33,7 @@ class IncomeCalculator:
             return True
         return False
 
-    def get_mineral_income(self) -> int:
+    def get_mineral_income(self) -> float:
         max_optimal_mineral_workers = self.base_count * 16
         max_total_mineral_workers = self.base_count * 24
 
@@ -42,7 +44,7 @@ class IncomeCalculator:
                                  max_total_mineral_workers - max_optimal_mineral_workers)
         return max_optimal_income + (suboptimal_workers * GATHER_RATES["mineralsSuboptimal"])
 
-    def get_vespene_income(self) -> int:
+    def get_vespene_income(self) -> float:
         max_optimal_vespene_workers = self.vespene_geyser_count * 2
         max_total_vespene_workers = self.vespene_geyser_count * 3
 
