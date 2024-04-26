@@ -8,6 +8,15 @@ class Expense:
     supply: int
     build_time: int
 
+    def __add__(self, other):
+        return Expense(self.minerals + other.minerals,
+                       self.vespene + other.vespene,
+                       self.supply + other.supply)
+
+    def __radd__(self, other):
+        return Expense(self.minerals + other.minerals,
+                       self.vespene + other.vespene,
+                       self.supply + other.supply)
 
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {

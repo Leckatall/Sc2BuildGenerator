@@ -3,6 +3,7 @@ from functools import reduce
 import SC2IncomeCalculator as sic
 from abc import ABC, abstractmethod
 import SC2Constants as SC
+from SC2Constants import Expense
 from dataclasses import dataclass
 
 
@@ -13,17 +14,6 @@ class CurrentIncome:
     vespene: float
 
 
-@dataclass(frozen=True)
-class Expense:
-    minerals: int
-    vespene: int
-    supply: int
-
-    def __add__(self, other):
-        return Expense(self.minerals + other.minerals,
-                       self.vespene + other.vespene,
-                       self.supply + other.supply)
-
 @dataclass
 class PlayerBalance:
     minerals: int
@@ -31,18 +21,27 @@ class PlayerBalance:
     supply: int
 
 
-@dataclass
+@dataclass(frozen=True)
 class Event:
     time: int
     name: str
     expense: Expense
 
+    def finished(self, time) -> bool:
+        return time < self.time + self.expense.build_time
 
-@dataclass
+
+@dataclass(frozen=True)
 class Unit(Event):
     @property
     def supply(self):
         return self.expense.supply
+
+
+@dataclass(frozen=True)
+class Ability(Event):
+    def __init__(self, time: int, name: str, cooldown: int):
+        super().__init__(time, name, Expense(*[0]*3, cooldown))
 
 
 class Player(ABC):
@@ -57,7 +56,7 @@ class Player(ABC):
 
     def get_balance(self, time) -> PlayerBalance:
         total_mined = self.income_manager.get_total_mined(time)
-        total_expenses = reduce((lambda x,y:x+y), self.get_expenses_before(time))
+        total_expenses = self.get_total_expenses(time)
         return PlayerBalance(
             int(total_mined.minerals) - total_expenses.minerals,
             int(total_mined.vespene) - total_expenses.vespene,
@@ -87,13 +86,11 @@ class Player(ABC):
             return False
         return True
 
-    def free_supply(self, time) -> int: return self.max_supply(time) - self.used_supply(time)
+    def free_supply(self, time) -> int:
+        return self.get_total_expenses(time).supply
 
     @abstractmethod
-    def max_supply(self, time) -> int: ...
-
-    @abstractmethod
-    def used_supply(self, time) -> int: ...
+    def start_events(self): ...
 
     @abstractmethod
     def make_base(self, time): ...
