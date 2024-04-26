@@ -27,6 +27,47 @@ class IncomeCalculator:
         self.mineral_workers = STARTING_VALUES["mineral_workers"]
         self.vespene_workers = STARTING_VALUES["vespene_workers"]
 
+    @property
+    def max_vespene_workers(self) -> int: return self.vespene_geyser_count * 3
+
+    # Could enable multiple workers to be moved at once?
+    def move_workers(self, count: int, to_vespene: bool = True) -> int:
+        """
+        :return: the amount of workers that were moved
+        :rtype: int
+        """
+        if to_vespene:
+            # M -> V
+            if self.max_vespene_workers > (self.vespene_workers + count):
+                if self.mineral_workers > count:
+                    # M(count) -> V
+                    self.mineral_workers -= count
+                    self.vespene_workers += count
+                    return count
+
+                # M -> V & M < count
+                self.mineral_workers = 0
+                self.vespene_workers += self.mineral_workers
+                return self.mineral_workers
+
+            # M(count) > V(max):: M(V(max)) -> V
+            movable_workers = self.max_vespene_workers - self.vespene_workers
+            self.mineral_workers -= movable_workers
+            self.vespene_workers += movable_workers
+            return movable_workers
+
+        # V -> M
+        if self.vespene_workers > count:
+            # V(count) -> M
+            self.mineral_workers -= count
+            self.vespene_workers += count
+            return count
+
+        # V -> M & V < count
+        self.vespene_workers = 0
+        self.mineral_workers += self.vespene_workers
+        return self.vespene_workers
+
     def add_vespene_geyser(self) -> bool:
         if self.base_count * 2 > self.vespene_geyser_count:
             self.vespene_geyser_count += 1

@@ -120,6 +120,12 @@ class Player(ABC):
             return self.total_vespene(time, incomes_processed + 1)
         return (income.vespene * (time - income.time)) + self.total_vespene(income.time, incomes_processed + 1)
 
+    def move_worker(self, time, to_vespene: bool = True):
+        self.income_generator.mineral_workers -= 1
+        self.income_generator.vespene_workers += 1
+
+
+
     def free_supply(self, time) -> int: return self.max_supply(time) - self.used_supply(time)
     @abstractmethod
     def max_supply(self, time) -> int: ...
@@ -150,6 +156,7 @@ OVERLORD_SUPPLY = 8
 class ZergPlayer(Player):
     def __init__(self):
         super().__init__()
+        self.spent_larvae = 0
 
     def larvae_count(self, time):
         if time == 0:
@@ -175,10 +182,12 @@ class ZergPlayer(Player):
     def make_structure(self, time, structure_name):
         structure_info = sc.ZERG_STRUCTURES[structure_name]
         if self.buy(structure_info["Minerals"], structure_info["Vespene"], 0):
-            ...
+            self.incomes.append(CurrentIncome(time, ))
 
-    def make_unit(self):
-        pass
+    def make_unit(self, time, unit_id):
+        if self.larvae_count(time) < 1:
+            return False
+        if
 
 
 
