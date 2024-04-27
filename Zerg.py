@@ -121,10 +121,12 @@ class ZergPlayer(main.Player):
         units = super().get_units(time)  # total units made
         for morphed_unit in units.keys() & SC.ZERG_MORPHS_FROM.keys():
             units[SC.ZERG_MORPHS_FROM[morphed_unit]] -= 1
+        structure_count = super().get_structures(time)
+        units["Drone"] -= structure_count - 1  # "-1" to account for the starting hatch
         return units
 
     def get_structures(self, time):
-        structures = super().get_units(time)  # total structures made
+        structures = super().get_structures(time)  # total structures made
         for morphed_structure in structures.keys() & SC.ZERG_MORPHS_FROM.keys():
             structures[SC.ZERG_MORPHS_FROM[morphed_structure]] -= 1
         return structures
@@ -138,7 +140,7 @@ class ZergPlayer(main.Player):
     def make_structure(self, time, structure_name):
         expense_report = SC.ZERG_STRUCTURES[structure_name]
         if self.can_afford(time, expense_report) and self.income_manager.kill_worker(time):
-            structure_event = main.Event(time, structure_name, expense_report)
+            structure_event = main.Structure(time, structure_name, expense_report)
             self.add_event(structure_event)
             if structure_name == "Hatchery":
                 self.make_base(time)
