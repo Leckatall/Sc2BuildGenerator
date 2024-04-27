@@ -1,12 +1,35 @@
 import main
 import SC2IncomeCalculator as sic
 import SC2Constants as SC
-
+from dataclasses import dataclass
 
 class ZergStructure(main.Event):
     def __init__(self, time, name):
         super().__init__(time, name, SC.ZERG_STRUCTURES[name])
 
+
+@dataclass
+class Hatch:
+    larvae: int
+    next_larvae_time: int
+
+    def use_larvae(self, time):
+        self.larvae -= 1
+        if self.larvae < 3:
+            self.next_larvae_time = time + 11
+
+    def update(self, time):
+        if self.larvae >= 3:
+            self.next_larvae_time = -1
+            return
+        if self.next_larvae_time == -1:
+            self.next_larvae_time = time + 11
+            return
+
+        if self.next_larvae_time == time:
+            self.larvae += 1
+            self.next_larvae_time = time + 11
+            return
 
 class ZergUnit(main.Unit):
     def __init__(self, time, name):
@@ -58,18 +81,45 @@ class ZergPlayer(main.Player):
             return True
         return False
 
-    def larvae_count(self, time):
+    def _get_larvae_events(self, time):
         previous_events = self.get_events_before(time)
         larvae_events = ["Hatchery", "Inject"]
 
         relevant_events = sorted(list(
-            filter(lambda x: (x.name in larvae_events and x.finished()) or type(x) is ZergUnit, previous_events)),
-            key=lambda a: a.time, reverse=True)
+            filter(lambda x: x.name in larvae_events or type(x) is ZergUnit, previous_events)),
+            key=lambda a: a.time)
+        events_at_time: dict[int: list[main.Event]] = dict()
+        for event in relevant_events:
+            if type(event) is ZergUnit:
+                events_at_time.setdefault(event.time, []).append(event)
+            else:
+                events_at_time.setdefault(event.finish_time, []).append(event)
+        return events_at_time
 
-        current_larvae = 3
-        current_hatcheries = 1
+
+
+    def larvae_count(self, time):
+        events_at_time = self._get_larvae_events(time)
+        hatcheries = [Hatch(3, -1)]
         for current_time in range(time + 1):
-            if current_larvae >= current_hatcheries:
+            for events in events_at_time.get(current_time, []):
+                if type(events) is ZergUnit:
+                    hatcheries[0]["larvae"] -= 1
+                elif events.name == "Hatchery":
+                    hatcheries.append({"larvae": 0, "next_larvae_time": current_time + 11})
+                elif events.name == "Inject":
+                    hatcheries[-1]["larvae"] += 3
+            for hatch in hatcheries:
+
+            hatcheries.sort(key=lambda x: x.larvae, reverse=True)
+
+        return sum([hatch["larvae"] for hatch in hatcheries])
+
+
+
+
+
+
 
 
 
