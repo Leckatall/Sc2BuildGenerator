@@ -27,8 +27,12 @@ class Event:
     name: str
     expense: Expense
 
-    def finished(self, time) -> bool:
-        return time < self.time + self.expense.build_time
+    @property
+    def finish_time(self) -> int:
+        return self.time + self.expense.build_time
+
+    def finished(self, time: int) -> bool:
+        return time < self.finish_time
 
 
 @dataclass(frozen=True)
@@ -36,6 +40,12 @@ class Unit(Event):
     @property
     def supply(self):
         return self.expense.supply
+
+
+@dataclass(frozen=True)
+class Structure(Event):
+    # A very useful class not just made to fit in lmao
+    ...
 
 
 @dataclass(frozen=True)
@@ -47,10 +57,6 @@ class Ability(Event):
 class Player(ABC):
     def __init__(self):
         self.income_manager: sic.IncomeManager = sic.IncomeManager()
-        self.supply_capacitor_count = 0
-        self.bank_statement = []
-        self.units: dict
-        self.structures: dict
         # self.events[time] ->
         self.events: list[Event] = []
 
@@ -86,8 +92,31 @@ class Player(ABC):
             return False
         return True
 
-    def free_supply(self, time) -> int:
+    def free_supply(self, time: int) -> int:
         return self.get_total_expenses(time).supply
+
+    def current_build(self) -> str:
+        return "\n".join([f"@{event.time}: {event.name}" for event in self.events])
+
+    def get_units(self, time: int) -> dict:
+        units = dict()
+        for event in self.events:
+            if event.time > time:
+                return units
+            if isinstance(event, Unit):
+                units.setdefault(event.name, 0)
+                units[event.name] += 1
+        return units
+
+    def get_structures(self, time):
+        structures = dict()
+        for event in self.events:
+            if event.time > time:
+                return structures
+            if isinstance(event, Structure):
+                structures.setdefault(event.name, 0)
+                structures[event.name] += 1
+        return structures
 
     @abstractmethod
     def start_events(self): ...
@@ -105,6 +134,9 @@ class Player(ABC):
     def make_unit(self, time, unit_name): ...
 
 
+if __name__ == "__main__":
+    while True:
+        eval(input("command: "))
 
 
 

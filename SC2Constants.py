@@ -18,6 +18,7 @@ class Expense:
                        self.vespene + other.vespene,
                        self.supply + other.supply)
 
+
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {
     "Baneling Nest": Expense(100, 50, 0, 43),
@@ -59,4 +60,62 @@ ZERG_UNITS = {
     "Viper": Expense(100, 200, 3, 29),
     "Ultralisk": Expense(275, 200, 6, 39),
     "BroodLord": Expense(150, 150, 2, 24),
+}
+
+# Assumes we will never lose a piece of tech lol
+ZERG_TECH_REQUIREMENTS = {
+    "Hatchery": "Hatchery",
+    "Evolution Chamber": "Hatchery",
+    "SpawningPool": "Hatchery",
+    "Drone": "Hatchery",
+    "Overlord": "Hatchery",
+
+    "BanelingNest": "SpawningPool",
+    "RoachWarren": "SpawningPool",
+    "SpineCrawler": "SpawningPool",
+    "SporeCrawler": "SpawningPool",
+    "Queen": "SpawningPool",
+    "ZerglingPair": "SpawningPool",
+    "Lair": "SpawningPool",
+
+    "Baneling": "BanelingNest",
+    "Roach": "RoachWarren",
+    "Ravager": "Roach",
+    "CreepTumor": "Queen",
+
+    "Overseer": "Lair",
+    "HydraliskDen": "Lair",
+    "InfestationPit": "Lair",
+    "NydusNetwork": "Lair",
+    "Spire": "Lair",
+    "Hive": "InfestationPit",
+
+    "LurkerDen": "HydraliskDen",
+    "Mutalisk": "Spire",
+    "Corruptor": "Spire",
+
+    "SwarmHost": "InfestationPit",
+    "Infestor": "InfestationPit",
+
+    "UltraliskCavern": "Hive",
+
+    "Changeling": "Overseer",
+    "Hydralisk": "HydraliskDen",
+    "Lurker": "LurkerDen",
+
+    "GreaterSpire": "Hive",
+    "Viper": "Hive",
+
+    "Ultralisk": "UltraliskCavern",
+    "BroodLord": "GreaterSpire"
+}
+
+ZERG_MORPHS_FROM = {
+    "Baneling": "ZerglingPair",
+    "Overseer": "Overlord",
+    "Lair": "Hatchery",
+    "Hive": "Lair",
+    "Lurker": "Hydralisk",
+    "GreaterSpire": "Spire",
+    "BroodLord": "Corruptor",
 }

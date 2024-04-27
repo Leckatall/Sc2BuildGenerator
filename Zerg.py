@@ -3,7 +3,8 @@ import SC2IncomeCalculator as sic
 import SC2Constants as SC
 from dataclasses import dataclass
 
-class ZergStructure(main.Event):
+
+class ZergStructure(main.Structure):
     def __init__(self, time, name):
         super().__init__(time, name, SC.ZERG_STRUCTURES[name])
 
@@ -18,22 +19,25 @@ class Hatch:
         if self.larvae < 3:
             self.next_larvae_time = time + 11
 
-    def update(self, time):
-        if self.larvae >= 3:
-            self.next_larvae_time = -1
-            return
-        if self.next_larvae_time == -1:
-            self.next_larvae_time = time + 11
-            return
+    def inject(self):
+        self.larvae += 3
+        self.next_larvae_time = -1
 
+    def update(self, time):
+        # Manages passive larvae production
         if self.next_larvae_time == time:
             self.larvae += 1
-            self.next_larvae_time = time + 11
-            return
+            self.next_larvae_time = time + 11 if self.larvae < 3 else -1
+
 
 class ZergUnit(main.Unit):
     def __init__(self, time, name):
         super().__init__(time, name, SC.ZERG_UNITS[name])
+
+
+@dataclass(frozen=True)
+class ZergUnitMorphed(ZergUnit):
+    morphed_from: str
 
 
 class ZergPlayer(main.Player):
@@ -46,8 +50,9 @@ class ZergPlayer(main.Player):
 
     def start_events(self):
         self.add_event(ZergStructure(-71, "Hatchery"))
+        self.make_base(-71)
         self.add_event(ZergUnit(-18, "Overlord"))
-        [self.add_event(ZergUnit(-12, "Drone")) for _ in range(12)]
+        [(self.add_event(ZergUnit(-12, "Drone")), self.make_worker(-12)) for _ in range(12)]
 
     def available_energy(self, time) -> int:
         previous_events = self.get_events_before(time)
@@ -57,6 +62,7 @@ class ZergPlayer(main.Player):
         return finished_queens - used_queen_abilities
 
     def available_injects(self, time) -> int:
+        # It works but I thinnk it could look nicer
         previous_events = self.get_events_before(time)
         finished_hatcheries = sum([event.name == "Hatchery" and event.finished(time) for event in previous_events])
         finished_queens = sum([event.name == "Queen" and event.finished(time) for event in previous_events])
@@ -96,32 +102,32 @@ class ZergPlayer(main.Player):
                 events_at_time.setdefault(event.finish_time, []).append(event)
         return events_at_time
 
-
-
-    def larvae_count(self, time):
+    def larvae_count(self, time: int) -> int:
         events_at_time = self._get_larvae_events(time)
-        hatcheries = [Hatch(3, -1)]
+        hatcheries: list[Hatch] = [Hatch(3, -1)]
         for current_time in range(time + 1):
             for events in events_at_time.get(current_time, []):
                 if type(events) is ZergUnit:
-                    hatcheries[0]["larvae"] -= 1
+                    hatcheries[0].use_larvae(time)
                 elif events.name == "Hatchery":
-                    hatcheries.append({"larvae": 0, "next_larvae_time": current_time + 11})
+                    hatcheries.append(Hatch(0, current_time + 11))
                 elif events.name == "Inject":
-                    hatcheries[-1]["larvae"] += 3
-            for hatch in hatcheries:
-
+                    hatcheries[-1].inject()
+            map(lambda hatch: hatch.update(current_time), hatcheries)
             hatcheries.sort(key=lambda x: x.larvae, reverse=True)
+        return sum([hatch.larvae for hatch in hatcheries])
 
-        return sum([hatch["larvae"] for hatch in hatcheries])
+    def get_units(self, time: int) -> dict:
+        units = super().get_units(time)  # total units made
+        for morphed_unit in units.keys() & SC.ZERG_MORPHS_FROM.keys():
+            units[SC.ZERG_MORPHS_FROM[morphed_unit]] -= 1
+        return units
 
-
-
-
-
-
-
-
+    def get_structures(self, time):
+        structures = super().get_units(time)  # total structures made
+        for morphed_structure in structures.keys() & SC.ZERG_MORPHS_FROM.keys():
+            structures[SC.ZERG_MORPHS_FROM[morphed_structure]] -= 1
+        return structures
 
     def make_base(self, time):
         self.income_manager.change_args_at_time(time, base_count=1)
@@ -134,6 +140,8 @@ class ZergPlayer(main.Player):
         if self.can_afford(time, expense_report) and self.income_manager.kill_worker(time):
             structure_event = main.Event(time, structure_name, expense_report)
             self.add_event(structure_event)
+            if structure_name == "Hatchery":
+                self.make_base(time)
 
     def make_unit(self, time, unit_name):
         if self.larvae_count(time) < 1:
@@ -146,5 +154,9 @@ class ZergPlayer(main.Player):
                 self.make_worker(time)
 
 
-
-
+if __name__ == "__main__":
+    while True:
+        me = ZergPlayer()
+        print("worked")
+        eval("ZergPlayer()")
+        eval(input("command: "))
