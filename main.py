@@ -55,10 +55,13 @@ class Ability(Event):
 
 
 class Player(ABC):
-    def __init__(self):
+    def __init__(self, events: tuple[Event] = ()):
         self.income_manager: sic.IncomeManager = sic.IncomeManager()
         # self.events[time] ->
-        self.events: list[Event] = []
+        self.events: list[Event] = list(events)
+
+    def __eq__(self, other):
+        return self.events == other.events
 
     def get_balance(self, time) -> PlayerBalance:
         total_mined = self.income_manager.get_total_mined(time)
@@ -70,7 +73,11 @@ class Player(ABC):
         )
 
     def get_total_expenses(self, time) -> Expense:
-        return reduce((lambda x, y: x.expense + y.expense), self.get_events_before(time))
+        previous_events = self.get_events_before(time)
+        total_expenses = Expense(0, 0, 0, -1)
+        for event in previous_events:
+            total_expenses += event.expense
+        return total_expenses
 
     def get_events_before(self, time) -> list[Event]:
         for index, event in enumerate(self.events):
@@ -92,8 +99,16 @@ class Player(ABC):
             return False
         return True
 
+    def get_supply(self, time: int) -> int:
+        previous_events = self.get_events_before(time)
+        supply = 0
+        for event in previous_events:
+            if isinstance(event, Unit):
+                supply += event.expense.supply
+        return supply
+
     def free_supply(self, time: int) -> int:
-        return self.get_total_expenses(time).supply
+        return -self.get_total_expenses(time).supply
 
     def current_build(self) -> str:
         return "\n".join([f"@{event.time}: {event.name}" for event in self.events])
@@ -109,7 +124,8 @@ class Player(ABC):
         return units
 
     def get_structures(self, time):
-        structures = dict()
+        # structures is indexed by structure name and returns structure count
+        structures: dict[str: int] = dict()
         for event in self.events:
             if event.time > time:
                 return structures
@@ -128,18 +144,20 @@ class Player(ABC):
     def make_worker(self, time): ...
 
     @abstractmethod
-    def make_structure(self, time, structure_name): ...
+    def make_structure(self, time, structure_name) -> bool: ...
 
     @abstractmethod
-    def make_unit(self, time, unit_name): ...
+    def make_unit(self, time, unit_name) -> bool: ...
+
+    @abstractmethod
+    def get_tech(self, time: int) -> set: ...
+
+    @abstractmethod
+    def get_possible_actions(self, time: int):
+        ...
 
 
 if __name__ == "__main__":
     while True:
         eval(input("command: "))
-
-
-
-
-
 

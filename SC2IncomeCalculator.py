@@ -75,7 +75,7 @@ class IncomeManager:
 
     def get_args_for_time(self, time: int) -> IncomeArguments:
         for current_income_args, next_income_args in zip(self.income_args_list, self.income_args_list[1:]):
-            if current_income_args.time < time < next_income_args:
+            if current_income_args.time < time < next_income_args.time:
                 return current_income_args
         return self.income_args_list[0]
 
@@ -91,7 +91,9 @@ class IncomeManager:
         :type time: int
         :param kwargs: IncomeArgs(time) = previous_args + kwargs
         :type kwargs: int
-        :return: None
+        return important for self.kill_worker()
+        :return: if args were changed
+        :rtype: bool
         """
         previous_args = self.get_args_for_time(time)
 
@@ -166,10 +168,14 @@ class IncomeManager:
         return False
 
     # More Niche Methods
+    def get_total_workers(self, time: int) -> int:
+        return self.get_args_for_time(time).mineral_workers + self.get_args_for_time(time).vespene_workers
+
     def kill_worker(self, time) -> bool:
         # Mainly for Zerg structures
         # return: A worker has been killed
-        return self.change_args_at_time(time, mineral_workers=-1)
+        # prioritises killing mineral workers first
+        return self.change_args_at_time(time, mineral_workers=-1) or self.change_args_at_time(time, vespene_workers=-1)
 
 
 

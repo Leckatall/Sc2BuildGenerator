@@ -11,19 +11,21 @@ class Expense:
     def __add__(self, other):
         return Expense(self.minerals + other.minerals,
                        self.vespene + other.vespene,
-                       self.supply + other.supply)
+                       self.supply + other.supply,
+                       -1)
 
     def __radd__(self, other):
         return Expense(self.minerals + other.minerals,
                        self.vespene + other.vespene,
-                       self.supply + other.supply)
+                       self.supply + other.supply,
+                       -1)
 
 
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {
-    "Baneling Nest": Expense(100, 50, 0, 43),
+    "BanelingNest": Expense(100, 50, 0, 43),
     "CreepTumor": Expense(0, 0, 0, 11),
-    "Evolution Chamber": Expense(75, 0, 0, 25),
+    "EvolutionChamber": Expense(75, 0, 0, 25),
     "Extractor": Expense(25, 0, 0, 21),
     "GreaterSpire": Expense(100, 150, 0, 71),
     "Hatchery": Expense(300, 0, -6, 71),
@@ -62,14 +64,28 @@ ZERG_UNITS = {
     "BroodLord": Expense(150, 150, 2, 24),
 }
 
+ZERG_TECH = {
+    'Hatchery',
+
+    'SpawningPool',
+    'Queen',  # For CreepTumor
+    'RoachWarren',
+    'BanelingNest'
+
+    'Lair',
+    'Overseer',  # For Changeling
+    'HydraliskDen',
+    'Spire',
+    'InfestationPit',
+    'LurkerDen',
+
+    'Hive',
+    'UltraliskCavern',
+    'GreaterSpire',
+}
+
 # Assumes we will never lose a piece of tech lol
 ZERG_TECH_REQUIREMENTS = {
-    "Hatchery": "Hatchery",
-    "Evolution Chamber": "Hatchery",
-    "SpawningPool": "Hatchery",
-    "Drone": "Hatchery",
-    "Overlord": "Hatchery",
-
     "BanelingNest": "SpawningPool",
     "RoachWarren": "SpawningPool",
     "SpineCrawler": "SpawningPool",
@@ -80,7 +96,7 @@ ZERG_TECH_REQUIREMENTS = {
 
     "Baneling": "BanelingNest",
     "Roach": "RoachWarren",
-    "Ravager": "Roach",
+    "Ravager": "RoachWarren",
     "CreepTumor": "Queen",
 
     "Overseer": "Lair",
@@ -119,3 +135,5 @@ ZERG_MORPHS_FROM = {
     "GreaterSpire": "Spire",
     "BroodLord": "Corruptor",
 }
+
+# print(set(ZERG_TECH_REQUIREMENTS.values()))

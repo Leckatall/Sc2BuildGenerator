@@ -41,8 +41,8 @@ class ZergUnitMorphed(ZergUnit):
 
 
 class ZergPlayer(main.Player):
-    def __init__(self):
-        super().__init__()
+    def __init__(self, events: tuple[main.Event] = ()):
+        super().__init__(events)
 
         self.structures = {structure: 0 for structure in SC.ZERG_STRUCTURES.keys()}
         self.injectable_hatches = 1
@@ -53,6 +53,7 @@ class ZergPlayer(main.Player):
         self.make_base(-71)
         self.add_event(ZergUnit(-18, "Overlord"))
         [(self.add_event(ZergUnit(-12, "Drone")), self.make_worker(-12)) for _ in range(12)]
+        self.add_event(main.Event(0, "ZergStart", SC.Expense(-1000, 0, 0, 0)))
 
     def available_energy(self, time) -> int:
         previous_events = self.get_events_before(time)
@@ -121,7 +122,7 @@ class ZergPlayer(main.Player):
         units = super().get_units(time)  # total units made
         for morphed_unit in units.keys() & SC.ZERG_MORPHS_FROM.keys():
             units[SC.ZERG_MORPHS_FROM[morphed_unit]] -= 1
-        structure_count = super().get_structures(time)
+        structure_count = sum(super().get_structures(time).values())
         units["Drone"] -= structure_count - 1  # "-1" to account for the starting hatch
         return units
 
@@ -131,29 +132,94 @@ class ZergPlayer(main.Player):
             structures[SC.ZERG_MORPHS_FROM[morphed_structure]] -= 1
         return structures
 
+    def get_tech(self, time: int) -> set:
+        structures = super().get_structures(time)
+        return {structure for structure in structures.keys() if structure in SC.ZERG_TECH}
+
     def make_base(self, time):
-        self.income_manager.change_args_at_time(time, base_count=1)
+        self.income_manager.change_args_at_time(time + SC.ZERG_STRUCTURES["Hatchery"].build_time, base_count=1)
 
     def make_worker(self, time):
-        self.income_manager.change_args_at_time(time, mineral_workers=1)
+        self.income_manager.change_args_at_time(time + SC.ZERG_UNITS["Drone"].build_time, mineral_workers=1)
 
-    def make_structure(self, time, structure_name):
+    def can_make_structure(self, time, structure_name) -> bool:
+        # Do we have the tech to make this structure?
+        if SC.ZERG_TECH_REQUIREMENTS.get(structure_name, "Hatchery") not in self.get_tech(time):
+            return False
+
+        # Checks if it's a morphing structure (which requires a structure to morph from)
+        if structure_name in SC.ZERG_MORPHS_FROM.keys():
+            if super().get_structures(time)[SC.ZERG_MORPHS_FROM[structure_name]] < 1:
+                return False
+
+        # Can we afford the unit (minerals, vespene, supply)
         expense_report = SC.ZERG_STRUCTURES[structure_name]
-        if self.can_afford(time, expense_report) and self.income_manager.kill_worker(time):
+        if self.can_afford(time, expense_report) and self.income_manager.get_total_workers(time) > 0:
+            return True
+
+    # NGL make_structure and make_unit could just be one thing I think. Ig for zerg it's a lil necessary?
+    # Should we be checking if we can perform the action in the same method we do it? Apparently not lol. I changed it.
+    def make_structure(self, time, structure_name) -> bool:
+        if self.can_make_structure(time, structure_name):
+            # Add the structure
+            expense_report = SC.ZERG_STRUCTURES[structure_name]
             structure_event = main.Structure(time, structure_name, expense_report)
             self.add_event(structure_event)
-            if structure_name == "Hatchery":
-                self.make_base(time)
 
-    def make_unit(self, time, unit_name):
-        if self.larvae_count(time) < 1:
+            if structure_name == "Hatchery":
+                # If the structure is a hatchery, add it to the income manager
+                self.make_base(time)
+            # The structure was made -> True
+            return True
+        # The structure wasn't made -> False
+        return False
+
+    def can_make_unit(self, time, unit_name) -> bool:
+        # Do we have the tech to make this unit?
+        if SC.ZERG_TECH_REQUIREMENTS.get(unit_name, "Hatchery") not in self.get_tech(time):
             return False
+
+        # Checks if it's a morphing unit (which requires a unit to morph from)
+        if unit_name in SC.ZERG_MORPHS_FROM.keys():
+            if super().get_units(time)[SC.ZERG_MORPHS_FROM[unit_name]] < 1:
+                return False
+
+        # Not a morphing unit so requires a larvae
+        elif self.larvae_count(time) < 1:
+            return False
+
+        # Can we afford the unit (minerals, vespene, supply)
         expense_report = SC.ZERG_UNITS[unit_name]
         if self.can_afford(time, expense_report):
+            return True
+        return False
+
+    def make_unit(self, time, unit_name) -> bool:
+        if self.can_make_unit(time, unit_name):
+            # Add the unit
+            expense_report = SC.ZERG_UNITS[unit_name]
             unit_event = main.Unit(time, unit_name, expense_report)
             self.add_event(unit_event)
+
             if unit_name == "Drone":
+                # If the unit is a drone, add it to the income manager
                 self.make_worker(time)
+            # The unit was made -> True
+            return True
+        # No unit was made -> False
+        return False
+
+    def get_possible_actions(self, time: int):
+        possible_actions = []
+        for action in SC.ZERG_UNITS.keys():
+            if self.can_make_unit(time, action):
+                # possible_actions.append(lambda x: x.make_unit(time, action))
+                possible_actions.append(action)
+        for action in SC.ZERG_STRUCTURES.keys():
+            if self.can_make_structure(time, action):
+                # possible_actions.append(lambda x: x.make_structure(time, action))
+                possible_actions.append(action)
+        return possible_actions
 
 
 if __name__ == "__main__":
