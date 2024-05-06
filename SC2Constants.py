@@ -23,24 +23,24 @@ class Expense:
 
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {
-    "BanelingNest": Expense(100, 50, 0, 43),
+    "BanelingNest": Expense(100, 50, -1, 43),
     "CreepTumor": Expense(0, 0, 0, 11),
-    "EvolutionChamber": Expense(75, 0, 0, 25),
-    "Extractor": Expense(25, 0, 0, 21),
+    "EvolutionChamber": Expense(75, 0, -1, 25),
+    "Extractor": Expense(25, 0, -1, 21),
     "GreaterSpire": Expense(100, 150, 0, 71),
     "Hatchery": Expense(300, 0, -6, 71),
     "Hive": Expense(200, 150, 0, 71),
-    "HydraliskDen": Expense(100, 100, 0, 29),
-    "InfestationPit": Expense(100, 100, 0, 36),
+    "HydraliskDen": Expense(100, 100, -1, 29),
+    "InfestationPit": Expense(100, 100, -1, 36),
     "Lair": Expense(150, 100, 0, 57),
-    "LurkerDen": Expense(100, 150, 0, 57),
-    "NydusNetwork": Expense(150, 150, 0, 36),
-    "RoachWarren": Expense(150, 0, 0, 39),
-    "SpawningPool": Expense(200, 0, 0, 46),
-    "SpineCrawler": Expense(100, 0, 0, 36),
-    "Spire": Expense(200, 200, 0, 71),
-    "SporeCrawler": Expense(75, 0, 0, 21),
-    "UltraliskCavern": Expense(150, 200, 0, 46)
+    "LurkerDen": Expense(100, 150, -1, 57),
+    "NydusNetwork": Expense(150, 150, -1, 36),
+    "RoachWarren": Expense(150, 0, -1, 39),
+    "SpawningPool": Expense(200, 0, -1, 46),
+    "SpineCrawler": Expense(100, 0, -1, 36),
+    "Spire": Expense(200, 200, -1, 71),
+    "SporeCrawler": Expense(75, 0, -1, 21),
+    "UltraliskCavern": Expense(150, 200, -1, 46)
 }
 
 ZERG_UNITS = {
@@ -70,7 +70,7 @@ ZERG_TECH = {
     'SpawningPool',
     'Queen',  # For CreepTumor
     'RoachWarren',
-    'BanelingNest'
+    'BanelingNest',
 
     'Lair',
     'Overseer',  # For Changeling
@@ -126,6 +126,25 @@ ZERG_TECH_REQUIREMENTS = {
     "BroodLord": "GreaterSpire"
 }
 
+ZERG_TECH_UNLOCKS = {
+
+    "SpawningPool": {'SpineCrawler', 'RoachWarren', 'SporeCrawler', 'BanelingNest', 'Lair', 'Queen', 'ZerglingPair'},
+    "Queen": {'CreepTumor'},
+    "BanelingNest": {'Baneling'},
+    "RoachWarren": {'Ravager', 'Roach'},
+
+    "Lair": {'Spire', 'Overseer', 'NydusNetwork', 'InfestationPit', 'HydraliskDen'},
+
+    "HydraliskDen": {'Hydralisk', 'LurkerDen'},
+    "Overseer": {'Changeling'},
+    "Spire": {'Mutalisk', 'Corruptor'},
+    "InfestationPit": {'Infestor', 'SwarmHost', 'Hive'},
+    "LurkerDen": {'Lurker'},
+
+    "Hive": {'GreaterSpire', 'Viper', 'UltraliskCavern'},
+    "GreaterSpire": {'BroodLord'},
+    "UltraliskCavern": {'Ultralisk'},
+}
 ZERG_MORPHS_FROM = {
     "Baneling": "ZerglingPair",
     "Overseer": "Overlord",

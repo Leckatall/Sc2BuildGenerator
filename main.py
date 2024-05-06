@@ -34,6 +34,9 @@ class Event:
     def finished(self, time: int) -> bool:
         return time < self.finish_time
 
+    def __repr__(self):
+        return f"Event(name: {self.name}, time: {self.time}, expense: {self.expense})"
+
 
 @dataclass(frozen=True)
 class Unit(Event):
@@ -56,12 +59,26 @@ class Ability(Event):
 
 class Player(ABC):
     def __init__(self, events: tuple[Event] = ()):
-        self.income_manager: sic.IncomeManager = sic.IncomeManager()
         # self.events[time] ->
         self.events: list[Event] = list(events)
 
+        self.income_manager: sic.IncomeManager = sic.IncomeManager()
+
     def __eq__(self, other):
         return self.events == other.events
+
+    def __repr__(self):
+        last_event_time = self.events[-1].time
+        return f"""
+        Player_type: {type(self)},
+        Player_last_event_time: {last_event_time},
+        Player_bank: {self.get_balance(last_event_time)},
+        Player_total_mined: {self.income_manager.get_total_mined(last_event_time)},
+        Player_units: {self.get_units(last_event_time)},
+        Player_structures: {self.get_structures(last_event_time)},
+        Player_event_count: {len(self.events)},
+        Player_last_event: {self.events[-1]}
+        """
 
     def get_balance(self, time) -> PlayerBalance:
         total_mined = self.income_manager.get_total_mined(time)

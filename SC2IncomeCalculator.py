@@ -1,4 +1,7 @@
+import math
 from dataclasses import dataclass, replace
+
+from SC2Constants import Expense
 
 GATHER_RATES_PER_MIN = {
     "mineralsOptimal": 58,
@@ -67,6 +70,33 @@ def get_vespene_income(income_args: IncomeArguments) -> float:
 
 def get_max_vespene_workers(income_args: IncomeArguments) -> int:
     return income_args.vespene_geyser_count * 3
+
+
+def time_to_gather(expense: Expense, income_args: IncomeArguments) -> int:
+    """
+    :param expense: should be the expense representing the
+    difference between current player balance and what they want to buy
+    no value in expense should be less than 0 other than build_time bc it isn't relevant here and thus is -1
+    :param income_args:
+    :return: time it will take with current income args to afford expense.
+    return_key: {-1: "no vespene income but vespene is needed in the expense"
+                 >tbd: "after tbd amount of time the time would be reduced by adding a worker"
+                 }
+    TO-DO?: could implement recursion where time_to_gather(expense.minerals + 50, income_args.workers + 1)?
+    """
+    if expense.minerals + expense.vespene == 0:
+        return 0
+    time_to_gather_vespene = 0
+    if expense.vespene > 0:
+        if income_args.vespene_workers == 0:
+            return -1
+        time_to_gather_vespene = expense.vespene // get_vespene_income(income_args)
+
+    # No fucking clue why it needs to be type-casted // -> int?!?!
+    time_to_gather_minerals: int = math.ceil(expense.minerals / get_mineral_income(income_args)) + 1
+    # "Expected type in but got float instead" // -> int?! idk what they on ngl
+    return max(time_to_gather_minerals,
+               time_to_gather_vespene)
 
 
 class IncomeManager:

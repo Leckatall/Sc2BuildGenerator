@@ -44,15 +44,14 @@ class ZergPlayer(main.Player):
     def __init__(self, events: tuple[main.Event] = ()):
         super().__init__(events)
 
-        self.structures = {structure: 0 for structure in SC.ZERG_STRUCTURES.keys()}
+        # self.structures = {structure: 0 for structure in SC.ZERG_STRUCTURES.keys()}
         self.injectable_hatches = 1
         self.start_events()
 
     def start_events(self):
         self.add_event(ZergStructure(-71, "Hatchery"))
-        self.make_base(-71)
         self.add_event(ZergUnit(-18, "Overlord"))
-        [(self.add_event(ZergUnit(-12, "Drone")), self.make_worker(-12)) for _ in range(12)]
+        [self.add_event(ZergUnit(-12, "Drone")) for _ in range(12)]
         self.add_event(main.Event(0, "ZergStart", SC.Expense(-1000, 0, 0, 0)))
 
     def available_energy(self, time) -> int:
@@ -75,9 +74,11 @@ class ZergPlayer(main.Player):
             return 0
         return min(finished_hatcheries - injected_hatcheries, finished_queens - (injected_hatcheries + creep_spread))
 
-    def inject(self, time):
+    def inject(self, time) -> bool:
         if self.available_injects(time) > 0:
             self.add_event(main.Ability(time, "Inject", 29))
+            return True
+        return False
 
     def max_inject(self, time):
         [self.add_event(main.Ability(time, "Inject", 29)) for _ in range(self.available_injects(time))]
@@ -143,13 +144,19 @@ class ZergPlayer(main.Player):
         self.income_manager.change_args_at_time(time + SC.ZERG_UNITS["Drone"].build_time, mineral_workers=1)
 
     def can_make_structure(self, time, structure_name) -> bool:
+        current_structures = super().get_structures(time)
         # Do we have the tech to make this structure?
         if SC.ZERG_TECH_REQUIREMENTS.get(structure_name, "Hatchery") not in self.get_tech(time):
             return False
 
         # Checks if it's a morphing structure (which requires a structure to morph from)
         if structure_name in SC.ZERG_MORPHS_FROM.keys():
-            if super().get_structures(time)[SC.ZERG_MORPHS_FROM[structure_name]] < 1:
+            if current_structures[SC.ZERG_MORPHS_FROM[structure_name]] < 1:
+                return False
+
+        # You can only make 2 extractors per base
+        if structure_name == "Extractor":
+            if current_structures.get("Extractor", 0) >= 2 * current_structures["Hatchery"]:
                 return False
 
         # Can we afford the unit (minerals, vespene, supply)
@@ -165,6 +172,8 @@ class ZergPlayer(main.Player):
             expense_report = SC.ZERG_STRUCTURES[structure_name]
             structure_event = main.Structure(time, structure_name, expense_report)
             self.add_event(structure_event)
+            # Kill the worker required to make the structure in the income manager
+            self.income_manager.kill_worker(time)
 
             if structure_name == "Hatchery":
                 # If the structure is a hatchery, add it to the income manager
@@ -209,17 +218,46 @@ class ZergPlayer(main.Player):
         # No unit was made -> False
         return False
 
+    def perform_action(self, time, action) -> bool:
+        if action in SC.ZERG_UNITS:
+            return self.make_unit(time, action)
+        elif action in SC.ZERG_STRUCTURES:
+            return self.make_structure(time, action)
+        elif action == "Inject":
+            return self.inject(time)
+        elif action == "MoveToVespene":
+            return bool(self.income_manager.move_workers(time, 1))
+        elif action == "MoveToMinerals":
+            return bool(self.income_manager.move_workers(time, 1, False))
+        else:
+            print(f"action: {action} not recognised")
+
     def get_possible_actions(self, time: int):
         possible_actions = []
-        for action in SC.ZERG_UNITS.keys():
-            if self.can_make_unit(time, action):
-                # possible_actions.append(lambda x: x.make_unit(time, action))
-                possible_actions.append(action)
-        for action in SC.ZERG_STRUCTURES.keys():
-            if self.can_make_structure(time, action):
-                # possible_actions.append(lambda x: x.make_structure(time, action))
+        # for action in SC.ZERG_UNITS.keys():
+        #     if self.can_make_unit(time, action):
+        #         # possible_actions.append(lambda x: x.make_unit(time, action))
+        #         possible_actions.append(action)
+        # for action in SC.ZERG_STRUCTURES.keys():
+        #     if self.can_make_structure(time, action):
+        #         # possible_actions.append(lambda x: x.make_structure(time, action))
+        #         possible_actions.append(action)
+        for action in [*SC.ZERG_UNITS, *SC.ZERG_STRUCTURES]:
+            if SC.ZERG_TECH_REQUIREMENTS.get(action, "Hatchery") in self.get_tech(time):
                 possible_actions.append(action)
         return possible_actions
+
+    def get_potential_actions(self, time: int) -> list[str]:
+        potential_actions = []
+        for action in [*SC.ZERG_UNITS, *SC.ZERG_STRUCTURES]:
+            if SC.ZERG_TECH_REQUIREMENTS.get(action, "Hatchery") in self.get_tech(time):
+                potential_actions.append(action)
+        current_income_args = self.income_manager.get_args_for_time(time)
+        if sic.get_max_vespene_workers(current_income_args) > current_income_args.vespene_workers:
+            potential_actions.append("MoveToVespene")
+        if current_income_args.vespene_workers > 0:
+            potential_actions.append("MoveToMinerals")
+        return potential_actions
 
 
 if __name__ == "__main__":
