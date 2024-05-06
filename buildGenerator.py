@@ -17,7 +17,7 @@ BUILD_LENGTH = 4
 def undo_last_action(player):
     last_action = player.events.pop()
     if last_action.name == "Drone" or last_action is Zerg.ZergStructure:
-        player.income_manager.self.income_args_list.pop()
+        player.income_manager.income_args_list.pop()
 
 
 class BuildGenerator:
@@ -31,7 +31,7 @@ class BuildGenerator:
         ...
 
     def score_player(self, player, metric=None):
-        return player.income_manager.get_total_mined(1000).minerals
+        return player.income_manager.get_total_mined(10000).minerals
 
     def get_best_player(self, players, metric=None):
         best_player = {"Player": players[0], "Score": self.score_player(players[0])}
@@ -97,15 +97,19 @@ class BuildGenerator:
 
     def speed_build_gen(self, zerg_player: Zerg.ZergPlayer):
         self.actions_explored += 1
-        best_score = (list[str], 0)
+        best_score = (tuple[str], self.score_player(zerg_player))
+
+        if len(zerg_player.events) > 18:
+            return best_score
+
         potential_actions = zerg_player.get_potential_actions(zerg_player.events[-1].time)
         for action in potential_actions:
-            self.execute_action(zerg_player, action)
-            self.speed_build_gen(zerg_player)
-            score = self.score_player(zerg_player)
-            if score > best_score[1]:
-                best_score = ([action] + score[0], score[1])
-            undo_last_action(zerg_player)
+            if self.execute_action(zerg_player, action):
+                self.speed_build_gen(zerg_player)
+                score = self.score_player(zerg_player)
+                if score > best_score[1]:
+                    best_score = ((action,), score)
+                undo_last_action(zerg_player)
             # print(f"Action({action}) led to Player: {potential_actions[action]}\n")
         return best_score
 
@@ -117,13 +121,15 @@ class BuildGenerator:
 
 if __name__ == "__main__":
     build_generatoir = BuildGenerator()
-    start_recursive = time.perf_counter()
-    best_player = build_generatoir.dfs_build_gen()
-    recursive_time_taken = time.perf_counter() - start_recursive
-    print("-----finished generating------")
-    print(f"generated: {build_generatoir.total_players_simulated} players in {recursive_time_taken}")
-    print(f"with {len(build_generatoir.builds)} unique builds")
-    print(f"with a score of {build_generatoir.score_player(best_player)} the best player was:{best_player}")
+    # start_recursive = time.perf_counter()
+    # best_player = build_generatoir.dfs_build_gen()
+    # recursive_time_taken = time.perf_counter() - start_recursive
+    # print("-----finished generating------")
+    # print(f"generated: {build_generatoir.total_players_simulated} players in {recursive_time_taken}")
+    # print(f"with {len(build_generatoir.builds)} unique builds")
+    # print(f"with a score of {build_generatoir.score_player(best_player)} the best player was:{best_player}")
+
+    print("starting V2...")
 
     start_v2 = time.perf_counter()
     best_build, best_score = build_generatoir.speed_build_gen(Zerg.ZergPlayer())

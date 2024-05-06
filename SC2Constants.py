@@ -23,12 +23,13 @@ class Expense:
 
 # Sanitized the data with data lore
 ZERG_STRUCTURES = {
+    "Hatchery": Expense(300, 0, -6, 71),
+    "Extractor": Expense(25, 0, -1, 21),
+    "SpawningPool": Expense(200, 0, -1, 46),
     "BanelingNest": Expense(100, 50, -1, 43),
     "CreepTumor": Expense(0, 0, 0, 11),
     "EvolutionChamber": Expense(75, 0, -1, 25),
-    "Extractor": Expense(25, 0, -1, 21),
     "GreaterSpire": Expense(100, 150, 0, 71),
-    "Hatchery": Expense(300, 0, -6, 71),
     "Hive": Expense(200, 150, 0, 71),
     "HydraliskDen": Expense(100, 100, -1, 29),
     "InfestationPit": Expense(100, 100, -1, 36),
@@ -36,7 +37,7 @@ ZERG_STRUCTURES = {
     "LurkerDen": Expense(100, 150, -1, 57),
     "NydusNetwork": Expense(150, 150, -1, 36),
     "RoachWarren": Expense(150, 0, -1, 39),
-    "SpawningPool": Expense(200, 0, -1, 46),
+
     "SpineCrawler": Expense(100, 0, -1, 36),
     "Spire": Expense(200, 200, -1, 71),
     "SporeCrawler": Expense(75, 0, -1, 21),

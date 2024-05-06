@@ -137,12 +137,6 @@ class ZergPlayer(main.Player):
         structures = super().get_structures(time)
         return {structure for structure in structures.keys() if structure in SC.ZERG_TECH}
 
-    def make_base(self, time):
-        self.income_manager.change_args_at_time(time + SC.ZERG_STRUCTURES["Hatchery"].build_time, base_count=1)
-
-    def make_worker(self, time):
-        self.income_manager.change_args_at_time(time + SC.ZERG_UNITS["Drone"].build_time, mineral_workers=1)
-
     def can_make_structure(self, time, structure_name) -> bool:
         current_structures = super().get_structures(time)
         # Do we have the tech to make this structure?
@@ -172,12 +166,6 @@ class ZergPlayer(main.Player):
             expense_report = SC.ZERG_STRUCTURES[structure_name]
             structure_event = main.Structure(time, structure_name, expense_report)
             self.add_event(structure_event)
-            # Kill the worker required to make the structure in the income manager
-            self.income_manager.kill_worker(time)
-
-            if structure_name == "Hatchery":
-                # If the structure is a hatchery, add it to the income manager
-                self.make_base(time)
             # The structure was made -> True
             return True
         # The structure wasn't made -> False
@@ -209,10 +197,6 @@ class ZergPlayer(main.Player):
             expense_report = SC.ZERG_UNITS[unit_name]
             unit_event = main.Unit(time, unit_name, expense_report)
             self.add_event(unit_event)
-
-            if unit_name == "Drone":
-                # If the unit is a drone, add it to the income manager
-                self.make_worker(time)
             # The unit was made -> True
             return True
         # No unit was made -> False
@@ -226,9 +210,12 @@ class ZergPlayer(main.Player):
         elif action == "Inject":
             return self.inject(time)
         elif action == "MoveToVespene":
-            return bool(self.income_manager.move_workers(time, 1))
+            move_to_vespene_event = main.Event(time, "MoveToVespene", SC.Expense(0, 0, 0, 0))
+            self.add_event(move_to_vespene_event)
         elif action == "MoveToMinerals":
-            return bool(self.income_manager.move_workers(time, 1, False))
+            if
+            move_to_minerals_event = main.Event(time, "MoveToMinerals", SC.Expense(0, 0, 0, 0))
+            self.add_event(move_to_minerals_event)
         else:
             print(f"action: {action} not recognised")
 

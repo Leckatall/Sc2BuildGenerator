@@ -46,6 +46,12 @@ class Unit(Event):
 
 
 @dataclass(frozen=True)
+class Worker(Unit):
+    # Identifies the unit made as a worker
+    ...
+
+
+@dataclass(frozen=True)
 class Structure(Event):
     # A very useful class not just made to fit in lmao
     ...
@@ -63,6 +69,7 @@ class Player(ABC):
         self.events: list[Event] = list(events)
 
         self.income_manager: sic.IncomeManager = sic.IncomeManager()
+
 
     def __eq__(self, other):
         return self.events == other.events
@@ -105,6 +112,10 @@ class Player(ABC):
     def add_event(self, event):
         self.events.append(event)
         self.events.sort(key=lambda x: x.time)
+        if event.name in self.income_manager.INCOME_EVENTS | SC.ZERG_STRUCTURES:
+            self.income_manager.update_args(self.events)
+
+
 
     def can_afford(self, time: int, expense) -> bool:
         current_balance = self.get_balance(time)
@@ -153,12 +164,6 @@ class Player(ABC):
 
     @abstractmethod
     def start_events(self): ...
-
-    @abstractmethod
-    def make_base(self, time): ...
-
-    @abstractmethod
-    def make_worker(self, time): ...
 
     @abstractmethod
     def make_structure(self, time, structure_name) -> bool: ...

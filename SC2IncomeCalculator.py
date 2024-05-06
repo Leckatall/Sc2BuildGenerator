@@ -1,7 +1,7 @@
 import math
 from dataclasses import dataclass, replace
 
-from SC2Constants import Expense
+import SC2Constants as SC
 
 GATHER_RATES_PER_MIN = {
     "mineralsOptimal": 58,
@@ -72,7 +72,7 @@ def get_max_vespene_workers(income_args: IncomeArguments) -> int:
     return income_args.vespene_geyser_count * 3
 
 
-def time_to_gather(expense: Expense, income_args: IncomeArguments) -> int:
+def time_to_gather(expense: SC.Expense, income_args: IncomeArguments) -> int:
     """
     :param expense: should be the expense representing the
     difference between current player balance and what they want to buy
@@ -80,34 +80,60 @@ def time_to_gather(expense: Expense, income_args: IncomeArguments) -> int:
     :param income_args:
     :return: time it will take with current income args to afford expense.
     return_key: {-1: "no vespene income but vespene is needed in the expense"
+                 -2: "no mineral income but minerals are needed in the expense"
                  >tbd: "after tbd amount of time the time would be reduced by adding a worker"
                  }
     TO-DO?: could implement recursion where time_to_gather(expense.minerals + 50, income_args.workers + 1)?
     """
     if expense.minerals + expense.vespene == 0:
         return 0
-    time_to_gather_vespene = 0
-    if expense.vespene > 0:
-        if income_args.vespene_workers == 0:
-            return -1
-        time_to_gather_vespene = expense.vespene // get_vespene_income(income_args)
 
-    # No fucking clue why it needs to be type-casted // -> int?!?!
-    time_to_gather_minerals: int = math.ceil(expense.minerals / get_mineral_income(income_args)) + 1
-    # "Expected type in but got float instead" // -> int?! idk what they on ngl
-    return max(time_to_gather_minerals,
-               time_to_gather_vespene)
+    time_to_gather_vespene: int = 0
+    if expense.vespene > 0:
+        vespene_income = get_vespene_income(income_args)
+        if vespene_income == 0:
+            return -1
+        time_to_gather_vespene = math.ceil(expense.vespene / vespene_income) + 1  # +1 for safety
+
+    time_to_gather_minerals: int = 0
+    if expense.minerals > 0:
+        mineral_income = get_mineral_income(income_args)
+        if mineral_income == 0:
+            return -2
+        time_to_gather_minerals = math.ceil(expense.minerals / mineral_income) + 1  # +1 for safety
+
+    return max(time_to_gather_minerals, time_to_gather_vespene)
 
 
 class IncomeManager:
     def __init__(self):
-        self.income_args_list: list[IncomeArguments] = [IncomeArguments(0, 1, 12, 0, 0)]
+        self.income_args_list: list[IncomeArguments] = [IncomeArguments(0, 0, 0, 0, 0)]
+
+        self.INCOME_EVENTS = {
+            "MoveToVespene": lambda time: self.move_workers(time, 1),
+            "MoveToMinerals": lambda time: self.move_workers(time, 1, False),
+
+            "Drone": lambda time: self.change_args_at_time(time + SC.ZERG_UNITS["Drone"].build_time,
+                                                           mineral_workers=1),
+            "Hatchery": lambda time: self.change_args_at_time(time + SC.ZERG_STRUCTURES["Hatchery"].build_time,
+                                                              base_count=1),
+            "ZergStructure": lambda time: self.kill_worker(time)
+        }
+
+    def update_args(self, events):
+        self.income_args_list: list[IncomeArguments] = [IncomeArguments(0, 0, 0, 0, 0)]
+        for event in events:
+            if event.name in self.INCOME_EVENTS:
+                self.INCOME_EVENTS[event.name](event.time)
+            # For zerg specifically structures also represent an income event
+            if event.name in SC.ZERG_STRUCTURES:
+                self.INCOME_EVENTS["ZergStructure"](event.time)
 
     def get_args_for_time(self, time: int) -> IncomeArguments:
         for current_income_args, next_income_args in zip(self.income_args_list, self.income_args_list[1:]):
-            if current_income_args.time < time < next_income_args.time:
+            if current_income_args.time <= time < next_income_args.time:
                 return current_income_args
-        return self.income_args_list[0]
+        return self.income_args_list[-1]
 
     def set_args_at_time(self, time, **kwargs):
         previous_args = self.get_args_for_time(time)
@@ -138,7 +164,7 @@ class IncomeManager:
     def get_total_mined(self, time: int) -> Bank:
         if time == 0:
             return Bank(50, 0)
-        income_args = self.get_args_for_time(time)
+        income_args = self.get_args_for_time(time - 1)
         duration = time - income_args.time
         return self.get_total_mined(income_args.time) + Bank(get_mineral_income(income_args) * duration,
                                                              get_vespene_income(income_args) * duration)
@@ -183,7 +209,7 @@ class IncomeManager:
         :return: the amount of workers that were moved
         :rtype: int
         """
-        for i in range(count, 0, -count//abs(count)):
+        for i in range(count, 0, -count // abs(count)):
             if self.change_args_at_time(time,
                                         mineral_workers=-i,
                                         vespene_workers=i):
@@ -206,8 +232,3 @@ class IncomeManager:
         # return: A worker has been killed
         # prioritises killing mineral workers first
         return self.change_args_at_time(time, mineral_workers=-1) or self.change_args_at_time(time, vespene_workers=-1)
-
-
-
-
-
